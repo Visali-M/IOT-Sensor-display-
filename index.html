@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>IoT Weather Monitoring Portal</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#87CEEB;
+overflow:hidden;
+}
+
+/* SKY */
+
+.sky{
+position:fixed;
+width:100%;
+height:100%;
+background:linear-gradient(#87CEEB,#dff6ff);
+z-index:-3;
+}
+
+/* CLOUDS */
+
+.cloud{
+position:absolute;
+background:white;
+border-radius:100px;
+opacity:0.9;
+}
+
+.cloud:before,
+.cloud:after{
+content:'';
+position:absolute;
+background:white;
+border-radius:100px;
+}
+
+/* CLOUD SHAPE */
+
+.cloud1{
+width:200px;
+height:60px;
+top:80px;
+left:-250px;
+animation:moveClouds 40s linear infinite;
+}
+
+.cloud1:before{
+width:100px;
+height:80px;
+top:-40px;
+left:10px;
+}
+
+.cloud1:after{
+width:120px;
+height:90px;
+top:-50px;
+right:15px;
+}
+
+.cloud2{
+width:250px;
+height:70px;
+top:200px;
+left:-300px;
+animation:moveClouds 60s linear infinite;
+}
+
+.cloud2:before{
+width:120px;
+height:90px;
+top:-50px;
+left:20px;
+}
+
+.cloud2:after{
+width:140px;
+height:100px;
+top:-60px;
+right:20px;
+}
+
+.cloud3{
+width:180px;
+height:50px;
+top:350px;
+left:-200px;
+animation:moveClouds 50s linear infinite;
+}
+
+.cloud3:before{
+width:90px;
+height:70px;
+top:-35px;
+left:15px;
+}
+
+.cloud3:after{
+width:110px;
+height:80px;
+top:-45px;
+right:15px;
+}
+
+/* CLOUD MOVEMENT */
+
+@keyframes moveClouds{
+0%{
+transform:translateX(0);
+}
+
+100%{
+transform:translateX(2000px);
+}
+}
+
+/* DASHBOARD */
+
+.container{
+display:flex;
+position:relative;
+z-index:2;
+}
+
+.sidebar{
+width:220px;
+background:#1e293b;
+color:white;
+height:100vh;
+padding:20px;
+}
+
+.sidebar ul{
+list-style:none;
+padding:0;
+}
+
+.sidebar li{
+padding:12px;
+cursor:pointer;
+border-radius:6px;
+}
+
+.sidebar li:hover{
+background:#334155;
+}
+
+.main{
+flex:1;
+padding:25px;
+}
+
+/* CARDS */
+
+.cards{
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+width:160px;
+text-align:center;
+box-shadow:0 5px 10px rgba(0,0,0,0.2);
+}
+
+.page{
+display:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="sky"></div>
+
+<div class="cloud cloud1"></div>
+<div class="cloud cloud2"></div>
+<div class="cloud cloud3"></div>
+
+<div class="container">
+
+<div class="sidebar">
+
+<h2>IoT Portal</h2>
+
+<ul>
+<li onclick="showPage('dashboard')">Dashboard</li>
+<li onclick="showPage('devices')">Devices</li>
+<li onclick="showPage('settings')">Settings</li>
+</ul>
+
+</div>
+
+<div class="main">
+
+<div id="dashboard" class="page">
+
+<h1>Weather Dashboard</h1>
+
+<div class="cards">
+
+<div class="card">
+<h3>Temperature</h3>
+<p id="temp">--</p>
+</div>
+
+<div class="card">
+<h3>Wind Speed</h3>
+<p id="wind">--</p>
+</div>
+
+</div>
+
+<br>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<div id="devices" class="page">
+
+<h1>Devices</h1>
+
+<p>Device 1 → <span id="d1">--</span></p>
+<p>Device 2 → <span id="d2">--</span></p>
+<p>Device 3 → <span id="d3">--</span></p>
+
+</div>
+
+<div id="settings" class="page">
+
+<h1>Settings</h1>
+
+<button onclick="toggleTheme()">Toggle Theme</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function showPage(page){
+
+let pages=document.querySelectorAll(".page")
+
+pages.forEach(p=>{
+p.style.display="none"
+})
+
+document.getElementById(page).style.display="block"
+
+}
+
+showPage("dashboard")
+
+/* CHART */
+
+let temps=[]
+let labels=[]
+
+const chart=new Chart(
+document.getElementById("chart"),
+{
+type:"line",
+data:{
+labels:labels,
+datasets:[{
+label:"Temperature",
+data:temps,
+borderColor:"red",
+tension:0.4
+}]
+}
+}
+)
+
+/* WEATHER API */
+
+async function updateData(){
+
+const res=await fetch(
+"https://api.open-meteo.com/v1/forecast?latitude=10.79&longitude=79.13&current_weather=true"
+)
+
+const data=await res.json()
+
+let temp=data.current_weather.temperature
+let wind=data.current_weather.windspeed
+
+document.getElementById("temp").innerText=temp+" °C"
+document.getElementById("wind").innerText=wind+" km/h"
+
+document.getElementById("d1").innerText=temp
+document.getElementById("d2").innerText=wind
+document.getElementById("d3").innerText="Online"
+
+labels.push(new Date().toLocaleTimeString())
+temps.push(temp)
+
+if(labels.length>10){
+
+labels.shift()
+temps.shift()
+
+}
+
+chart.update()
+
+}
+
+setInterval(updateData,5000)
+
+updateData()
+
+function toggleTheme(){
+
+document.body.style.background=
+document.body.style.background=="black"
+?"#87CEEB"
+:"black"
+
+}
+
+</script>
+
+</body>
+</html>
